@@ -64,24 +64,16 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      */
     public function sendTo(User $recipient, float $amount): void
     {
-        if ($amount < 0) {
-            throw new Exception('incorrect amount');
-        }
-
-        if ($amount > $this->getBalance()) {
-            throw new Exception('insufficient balance');
-        }
-
         DB::transaction(
             function () use ($recipient, $amount) {
+                $this->balance->decrease($amount);
+                $recipient->balance->increase($amount);
                 $transaction = new Transaction([
                     'amount'       => $amount,
                     'from_user_id' => $this->id,
                     'to_user_id'   => $recipient->id,
                 ]);
                 $transaction->save();
-                $this->balance->decrease($amount);
-                $recipient->balance->increase($amount);
             }
         );
     }
